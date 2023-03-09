@@ -153,7 +153,6 @@ A(r, θ, a) = (r^2 + a^2)^2 - a^2 * Δ(r, a) * sin(θ)^2
 rtildep(a) = 2 * (1 + Cos(2 / 3 * acos(a)))
 rtilden(a) = 2 * (1 + Cos(2 / 3 * acos(-a)))
 
-
 """
     λcrit(r::Complex, a)
 
@@ -175,13 +174,11 @@ Returns η values on the critical curve associated with a given r.
 """
 ηcrit(r, a) = (r^3 / a^2) * (4 * Δ(r, a) / (r - 1)^2 - r)
 
-
 ##----------------------------------------------------------------------------------------------------------------------
 # Radial Stuff
 ##----------------------------------------------------------------------------------------------------------------------
 
 get_root_diffs(r1, r2, r3, r4) = r2 - r1, r3 - r1, r3 - r2, r4 - r1, r4 - r2
-
 
 function rs(met::Kerr, α, β, θs, o::AssymptoticObserver, isindir, n)
   a = met.spin
@@ -223,7 +220,6 @@ function rs_mask(met::Kerr, n_init, α, β, θs, o::AssymptoticObserver, isindir
     return (0.0, true, 4), true
   end
 end
-
 
 function rs_cumulative!(met::Kerr, rsvals, n_init, α, β, θs, o::AssymptoticObserver, isindir)
   θo = o.inclination
@@ -511,12 +507,11 @@ Mino time of trajectory between two inclinations for a given screen coordinate
 
   `n` : nth image in orde of amount of minotime traversed
 """
-Gθ(met, α, β, θs, θo, isindir, n) = _Gθ(met::Kerr, sign(β), θs, θo, isindir, n, η(α, β, θo, a), λ(α, θo))
+Gθ(met, α, β, θs, θo, isindir, n) = _Gθ(met::Kerr, sign(β), θs, θo, isindir, n, η(α, β, θo, met.spin), λ(α, θo))
 
 function _Gθ(met::Kerr, signβ, θs, θo, isindir, n, η, λ)
   a = met.spin
   Go, Gs, Ghat, minotime, isvortical = 0.0, 0.0, 0.0, 0.0, η < 0.0
-
 
   isincone = abs(cos(θs)) < abs(cos(θo))
   if isincone && (isindir != ((signβ > 0) ⊻ (θo > π / 2)))
@@ -592,6 +587,7 @@ function jac_bl2zamo_du(met::Kerr, r, θ)
   Σt = Σ(r, θ, a)
   Δt = Δ(r, a)
   At = A(r, θ, a)
+
   return @SMatrix [# Eq 3.1 1972ApJ...178..347B
     √(At / (Σt * Δt)) 0.0         2*a*r/√(At * Σt * Δt) 0.0
     0.0               √(Δt / Σt)  0.0                   0.0
@@ -626,7 +622,6 @@ function jac_zamo2bl_du(met::Kerr, r, θ)
   ]
 end
 
-
 function jac_bl2zamo_ud(met::Kerr, r, θ)
   a = met.spin
   Σt = Σ(r, θ, a)
@@ -647,7 +642,6 @@ function jac_zamo2bl_ud(met::Kerr, r, θ)
   Σt = Σ(r, θ, a)
   Δt = Δ(r, a)
   At = A(r, θ, a)
-
 
   return @SMatrix [
     # coords = {t, r, ϕ, θ}
@@ -701,8 +695,6 @@ end
 
 evpa(fα, fβ) = atan(-fα, fβ)
 
-
-
 function calcPol(met::Kerr, α, β, ri, θs, θo, cross_spec_index, magfield::SVector{3, Float64}, βfluid::SVector{3, Float64}, νr::Bool, θsign::Bool)
   a = met.spin
   βv = βfluid[1]
@@ -738,7 +730,6 @@ function calcPol(met::Kerr, α, β, ri, θs, θo, cross_spec_index, magfield::SV
   f_temp_d = ((A - B * im) * (ri - a * cos(θs) * im)) * (f_bl_u)
   κ = sum(p_bl_u .* f_temp_d)
   κ = κ / √(conj(κ) * κ)
-
 
   eα, eβ = screen_polarisation(met, κ, θo, α, β) .* (norm^((cross_spec_index + 1.0) / 2))
 

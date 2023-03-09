@@ -333,7 +333,6 @@ function p_boyer_lindquist_d(met::Schwarzschild, r, θ, η, λ, νr::Bool, νθ:
   @SVector [-1, (νr ? 1 : -1) * √abs(r_potential(met, η, λ, r)) / Δ(r), λ, (νθ ? 1 : -1) * √abs(θ_potential(met, η, λ, θ))]
 end
 
-
 """
     jac_bl2zamo_du(met::Schwarzschild, r, θ)
 
@@ -445,7 +444,6 @@ function screen_polarisation(met::Schwarzschild, κ::Complex, α, β)# Eq 31 10.
   μ = -α
   fα = (β * κ2 - μ * κ1) / (μ^2 + β^2)
   fβ = (β * κ1 + μ * κ2) / (μ^2 + β^2)
-
 
   return fα, fβ
 end

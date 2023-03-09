@@ -4,15 +4,6 @@ authors = ["dominicchang <dchang3419@hotmail.com>"]
 version = "0.1.0"
 
 [deps]
-BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
-CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
-CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
-Chain = "8be319e6-bccf-4806-a6f7-6fae938471bc"
-Comrade = "99d987ce-9a1e-4df8-bc0b-1ea019aa547b"
-DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 FastElliptic = "2a8b799e-c098-4961-872a-356c768d184c"
-JuKeBOX = "bcd8bb4e-ee1b-46ca-a648-33f419ff6fce"
-Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"

@@ -50,8 +50,8 @@ function getCoordinates(event::AbstractSpaceTimeEvent)
     @error "getCoordinates has not been defined for $(typeof(event))"
 end
 
-struct AssymptoticObserver{D,O} <: AbstractSpaceTimeEvent
-    distance::D
+struct AssymptoticObserver{P,O} <: AbstractSpaceTimeEvent
+    azimuth::P
     inclination::O
 end
 function getCoordinates(observer::AssymptoticObserver)
