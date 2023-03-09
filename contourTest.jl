@@ -2,12 +2,9 @@ import Pkg
 Pkg.activate((@__DIR__))
 using Revise
 using CairoMakie
-using BenchmarkTools
 using StaticArrays
 #using Plots
 include((@__DIR__)*"/src/Jube.jl")
-
-
 
 #prof = profile(bam, r)*redshift^(3+bam.α)
 
@@ -146,7 +143,7 @@ count = 0
 
     count +=1
 end
-a = -1.1
+a = -1.0
 θo = 70/180*π
 θs = π/2
 pa = 3.1440968196839307

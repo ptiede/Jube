@@ -446,19 +446,20 @@ function I4r_full(met::Kerr, roots, root_diffs)
   r1, _, _, r4 = roots
   _, r31, r32, r41, r42 = root_diffs
 
-  try
-    C = √real(r31 * r42)
-    D = √real(r32 * r41)
-    k4 = 4C * D / (C + D)^2
-    a2 = abs(imag(r1))
-
-    k4 = 4 * C * D / (C + D)^2
-
-    go = √max((4a2^2 - (C - D)^2) / ((C + D)^2 - 4a2^2), 0.0)
-    return 2 / (C + D) * FastElliptic.F(π / 2 + atan(go), k4)
-  catch e
+  arg1 = real(r31 * r42)
+  arg2 = real(r32 * r41)
+  if arg1 < 0 || arg2 < 0
     return 0
   end
+  C = √real(arg1)
+  D = √real(arg2)
+  k4 = 4C * D / (C + D)^2
+  a2 = abs(imag(r1))
+
+  k4 = 4 * C * D / (C + D)^2
+
+  go = √max((4a2^2 - (C - D)^2) / ((C + D)^2 - 4a2^2), 0.0)
+  return 2 / (C + D) * FastElliptic.F(π / 2 + atan(go), k4)
 end
 
 function I4r(met::Kerr, roots, root_diffs, rs)
