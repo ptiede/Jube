@@ -4,7 +4,20 @@ struct Kerr <: AbstractMetric
     spin::Float64
 end
 
-horizon(met::Kerr) = 1 + √(1 - met.spin)
+horizon(met::Kerr) = 1 + √(1 - met.spin^2)
+
+Δ(r, a) = r^2 - 2r + a^2
+Σ(r, θ, a) = r^2 + a^2 * cos(θ)^2
+A(r, θ, a) = (r^2 + a^2)^2 - a^2 * Δ(r, a) * sin(θ)^2
+Ξ(r, θ, a) = (r^2 + a^2)^2 - Δ(r, a) * a^2 * sin(θ)^2
+ω(r, θ, a) = 2 * a * r / Ξ(r, θ, a)
+
+η(α, β, θo, a) = (α^2 - a^2) * cos(θo)^2 + β^2
+λ(α, θo) = -α * sin(θo)
+
+rtildep(a) = 2 * (1 + Cos(2 / 3 * acos(a)))
+rtilden(a) = 2 * (1 + Cos(2 / 3 * acos(-a)))
+
 
 """
     met_uu(met::Kerr, r, θ)
@@ -141,17 +154,6 @@ function get_roots(met::Kerr, η, λ)
   return r1, r2, r3, r4
 end
 
-Δ(r, a) = r^2 - 2r + a^2
-Σ(r, θ, a) = r^2 + a^2 * cos(θ)^2
-A(r, θ, a) = (r^2 + a^2)^2 - a^2 * Δ(r, a) * sin(θ)^2
-Ξ(r, θ, a) = (r^2 + a^2)^2 - Δ(r, a) * a^2 * sin(θ)^2
-ω(r, θ, a) = 2 * a * r / Ξ(r, θ, a)
-
-η(α, β, θo, a) = (α^2 - a^2) * cos(θo)^2 + β^2
-λ(α, θo) = -α * sin(θo)
-
-rtildep(a) = 2 * (1 + Cos(2 / 3 * acos(a)))
-rtilden(a) = 2 * (1 + Cos(2 / 3 * acos(-a)))
 
 """
     λcrit(r::Complex, a)
@@ -446,13 +448,27 @@ function I4r_full(met::Kerr, roots, root_diffs)
   r1, _, _, r4 = roots
   _, r31, r32, r41, r42 = root_diffs
 
+  #try
+  #  C = √real(r31*r42)
+  #  D = √real(r32*r41)
+  #  k4 = 4C*D/(C+D)^2
+  #  a2 = abs(imag(r1))
+
+  #  k4 = 4*C*D/(C+D)^2
+  #  
+  #  go = √max((4a2^2 - (C-D)^2) / ((C+D)^2 - 4a2^2), 0.)
+  #  return 2/(C+D)*FastElliptic.F(π/2 + atan(go), k4) 
+  #catch e
+  #  return 0
+  #end
+
   arg1 = real(r31 * r42)
   arg2 = real(r32 * r41)
   if arg1 < 0 || arg2 < 0
     return 0
   end
-  C = √real(arg1)
-  D = √real(arg2)
+  C = √arg1
+  D = √Aarg2
   k4 = 4C * D / (C + D)^2
   a2 = abs(imag(r1))
 
@@ -460,6 +476,8 @@ function I4r_full(met::Kerr, roots, root_diffs)
 
   go = √max((4a2^2 - (C - D)^2) / ((C + D)^2 - 4a2^2), 0.0)
   return 2 / (C + D) * FastElliptic.F(π / 2 + atan(go), k4)
+
+
 end
 
 function I4r(met::Kerr, roots, root_diffs, rs)

@@ -113,19 +113,25 @@ function plot(αmax, βmax, rmin, rmax, ntemp, a, steps, θs, θo, B, βfluid, r
     display(f)
 end
 
-a = 1.0
 αmax = 20
 βmax = 20
+
+a = 0.92872191 
+θo = 0.45379006
+pa = 0.60225741
+spec_index = 0.82056789
+rpeak = 0.28258731
+p1 = 0.49620015
+p2 = 0.87419257
+βv = 0.8807092
+ϕz = 0.6482512
+ι = 0.47341764
 steps = 50
 n = 2
-θo = (180-60)*π/180
 θs = (90)*π/180
 back = true
 
-βv = 0.71
 θz = π/2
-ϕz = -90*π/180
-ι = π/3
 B = @SVector[sin(ι)*cos(ϕz), sin(ι)*sin(ϕz), cos(ι)]
 βfluid = @SVector[βv, θz, ϕz]
 rmin = 2
@@ -144,8 +150,8 @@ count = 0
     count +=1
 end
 a = -1.0
-θo = 70/180*π
-θs = π/2
+θo = 7
+θs = π/4
 pa = 3.1440968196839307
 βv = 0.9860658551413877
 χ = -1.956050891045084
