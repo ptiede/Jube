@@ -59,15 +59,15 @@ end
 
 function trace_nring_and_get_mask(acc::JuKeBOX, n, α, β, θs, o::AssymptoticObserver, isindir)
     met = acc.metric
+    rh = horizon(met)
     (r, νr, _), mask = rs_mask(met, n, α, β, θs, o, isindir) 
-
     T = eltype(r)
-    νθ =  cos(θs)< abs(cos(o.inclination)) ? (o.inclination>θs) ⊻ ((n-1)%2==1) : !isindir
-    if (r == Inf || r < 1+ √(1-met.spin^2) + eps())
-        return (zero(T), zero(T), zero(T), zero(T)), mask
-    else
-        return _emission(acc, α, β, r, νr, νθ, o, θs), mask
-    end
+
+    νθ =  cos(θs)< abs(cos(o.inclination)) ? (o.inclination>θs) ⊻ (n%2==1) : !isindir
+
+    (r == Inf || r < rh + eps()) && return (zero(T), zero(T), zero(T), zero(T)), mask
+
+    return _emission(acc, α, β, r, νr, νθ, o, θs), mask
 end
 
 function _emission(acc::JuKeBOX, α, β, r, νr, νθ, o, θs)
