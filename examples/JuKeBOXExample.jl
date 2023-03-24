@@ -1,5 +1,10 @@
-import Pkg
-Pkg.activate((@__DIR__))
+import Pkg;
+Pkg.activate((@__DIR__));
+Pkg.add(url="https://github.com/dchang10/FastElliptic.git")
+Pkg.add(url=abspath((@__DIR__)*"/../"))
+Pkg.instantiate();
+# This is for your local julia workspace
+
 using Revise
 using CairoMakie
 using Jube
@@ -60,3 +65,4 @@ Colorbar(fig[2, 4], hm3)
 
 
 display(fig)
+save("img.png", fig)

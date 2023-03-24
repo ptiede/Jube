@@ -4,3 +4,4 @@ comrade_test.jl
 Manifest.toml
 .vscode*
 .CondaPkg
+*.png
