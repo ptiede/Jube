@@ -1,4 +1,6 @@
 import Pkg
+Pkg.add(url="https://github.com/dchang10/FastElliptic.git")
+Pkg.add(url=abspath((@__DIR__)*"/../"))
 Pkg.activate((@__DIR__))
 using Revise
 using CairoMakie
