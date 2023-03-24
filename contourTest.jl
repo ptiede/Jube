@@ -3,16 +3,7 @@ Pkg.activate((@__DIR__))
 using Revise
 using CairoMakie
 using StaticArrays
-#using Plots
 include((@__DIR__)*"/src/Jube.jl")
-
-#prof = profile(bam, r)*redshift^(3+bam.α)
-
-DblPower(r, r0, a, b) = (r/r0)^a/(1 + (r/r0)^(a+b))
-function Jube.calcPol(α, β, rstemp, θs, θo, a, B, βfluid, νrtemp, νθfalse, rpeak, p1, p2) 
-    return Jube.calcPol(α, β, rstemp, θs, θo, a, B, βfluid, νrtemp, νθfalse) .* DblPower(rstemp, rpeak, p1, p2)
-end
-
 
 function plot(αmax, βmax, rmin, rmax, ntemp, a, steps, θs, θo, B, βfluid, rpeak, p1, p2, pa)
     met = Jube.Kerr(a)
@@ -37,7 +28,10 @@ function plot(αmax, βmax, rmin, rmax, ntemp, a, steps, θs, θo, B, βfluid, r
     ax3 = Axis(f[2,2], xlabel="α", ylabel="β",aspect=1, xlabelsize=20, ylabelsize=20, xticklabelsize=20, yticklabelsize=20)
     xlims!(ax3, -αmax, αmax)
     ylims!(ax3, -βmax, βmax)
-
+    
+    
+    sinvals = [zeros(2steps) for _ in 1:2steps]#[Vector{Float64}(0.0 ,2steps) for _ in 1:2steps]
+    cosvals = [zeros(2steps) for _ in 1:2steps]#[Vector{Float64}(0.0 ,2steps) for _ in 1:2steps]
     for n in 0:ntemp
 
         αvalstemp = LinRange(-αmax,αmax, 2steps)
@@ -49,8 +43,6 @@ function plot(αmax, βmax, rmin, rmax, ntemp, a, steps, θs, θo, B, βfluid, r
         rsvals2 = [zeros(2steps) for _ in 1:2steps]#[Vector{Float64}(0.0 ,2steps) for _ in 1:2steps]
         rsvals3 = [zeros(2steps) for _ in 1:2steps]#[Vector{Float64}(0.0 ,2steps) for _ in 1:2steps]
         rsvals4 = [zeros(2steps) for _ in 1:2steps]#[Vector{Float64}(0.0 ,2steps) for _ in 1:2steps]
-        sinvals = [zeros(2steps) for _ in 1:2steps]#[Vector{Float64}(0.0 ,2steps) for _ in 1:2steps]
-        cosvals = [zeros(2steps) for _ in 1:2steps]#[Vector{Float64}(0.0 ,2steps) for _ in 1:2steps]
         geotypevals = [zeros(2steps) for _ in 1:2steps]
         rootvals = [zeros(2steps) for _ in 1:2steps]
 
