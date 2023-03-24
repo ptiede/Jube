@@ -468,7 +468,7 @@ function I4r_full(met::Kerr, roots, root_diffs)
     return 0
   end
   C = √arg1
-  D = √Aarg2
+  D = √arg2
   k4 = 4C * D / (C + D)^2
   a2 = abs(imag(r1))
 
