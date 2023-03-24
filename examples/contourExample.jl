@@ -149,25 +149,3 @@ count = 0
 
     count +=1
 end
-a = -1.0
-θo = 7
-θs = π/4
-pa = 3.1440968196839307
-βv = 0.9860658551413877
-χ = -1.956050891045084
-ι = 1.390577214486354
-p1 = 5.5593933604673514
-p2 = 2.6630142060526514
-n = 4
-steps = 200
-
-@time plot(αmax, βmax, rmin, rmax, n, a,steps, θs, θo, B, βfluid, rpeak, p1, p2, pa)
-@btime checkspeed(αmax, βmax,  n, a,steps, θs, θo, B, βfluid, rpeak, p1, p2, pa)
-@profview [checkspeed(αmax, βmax,  n, a,steps, θs, θo, B, βfluid, rpeak, p1, p2, pa) for i in 1:100]
-@profview [Jube.rs((rand()-0.5)*αmax, (rand()-0.5)*βmax, θs, rand()*π, a, true, n) for i in 1:10000000]
-
-
-findmax([Jube.rs(-0.0, i, θs, θo, a, false, n)[1] for i in -1:0.0001:-0.7])
-[i for i in -1:0.0001:-0.7][2880]
-
-Jube.rs(5.0, 1, θs, (160/180)*π, a, false, n)[1]
