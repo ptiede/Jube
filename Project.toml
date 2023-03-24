@@ -4,10 +4,6 @@ authors = ["dominicchang <dchang3419@hotmail.com>"]
 version = "0.1.0"
 
 [deps]
-CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
-Cthulhu = "f68482b8-f384-11e8-15f7-abe071a5a75f"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 FastElliptic = "2a8b799e-c098-4961-872a-356c768d184c"
-Metal = "dde4c033-4e86-420c-a63e-0dd931031962"
-Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
