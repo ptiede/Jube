@@ -6,14 +6,14 @@ end
 
 horizon(met::Kerr) = 1 + √(1 - met.spin^2)
 
-Δ(r, a) = r^2 - 2r + a^2
-Σ(r, θ, a) = r^2 + a^2 * cos(θ)^2
-A(r, θ, a) = (r^2 + a^2)^2 - a^2 * Δ(r, a) * sin(θ)^2
-Ξ(r, θ, a) = (r^2 + a^2)^2 - Δ(r, a) * a^2 * sin(θ)^2
-ω(r, θ, a) = 2 * a * r / Ξ(r, θ, a)
+Δ(met::Kerr, r, a) = r^2 - 2r + a^2
+Σ(met::Kerr, r, θ, a) = r^2 + a^2 * cos(θ)^2
+A(met::Kerr, r, θ, a) = (r^2 + a^2)^2 - a^2 * Δ(met, r, a) * sin(θ)^2
+Ξ(met::Kerr, r, θ, a) = (r^2 + a^2)^2 - Δ(met, r, a) * a^2 * sin(θ)^2
+ω(met::Kerr, r, θ, a) = 2 * a * r / Ξ(met, r, θ, a)
 
-η(α, β, θo, a) = (α^2 - a^2) * cos(θo)^2 + β^2
-λ(α, θo) = -α * sin(θo)
+η(met::Kerr, α, β, θo, a) = (α^2 - a^2) * cos(θo)^2 + β^2
+λ(met::Kerr, α, θo) = -α * sin(θo)
 
 rtildep(a) = 2 * (1 + Cos(2 / 3 * acos(a)))
 rtilden(a) = 2 * (1 + Cos(2 / 3 * acos(-a)))
@@ -32,10 +32,10 @@ Inverse Kerr Metric in Boyer Lindquist (BL) coordinates.
 """
 function met_uu(met::Kerr, r, θ)
   a = met.spin
-  Ξt = Ξ(r, θ, a)
-  Σt = Σ(r, θ, a)
-  Δt = Δ(r, a)
-  ωt = ω(r, θ, a)
+  Ξt = Ξ(met, r, θ, a)
+  Σt = Σ(met, r, θ, a)
+  Δt = Δ(met, r, a)
+  ωt = ω(met, r, θ, a)
 
   return @SMatrix [ #Eq 1 2105.09440
     -Ξt/(Σt*Δt)     0.0     -Ξt*ωt/(Σt*Δt)                  0.0
@@ -114,7 +114,7 @@ function θ_potential(met::Kerr, η, λ, θ)
 end
 
 """
-  get_roots(met::Kerr, η, λ)
+  get_radial_roots(met::Kerr, η, λ)
 
 Returns roots of r⁴ + (a²-η-λ²)r² + 2(η+(a-λ)²)r - a²η
 
@@ -125,7 +125,7 @@ Returns roots of r⁴ + (a²-η-λ²)r² + 2(η+(a-λ)²)r - a²η
   `λ`  : Reduced azimuthal agular momentum
 
 """
-function get_roots(met::Kerr, η, λ)
+function get_radial_roots(met::Kerr, η, λ)
   a = met.spin
 
   a2 = a * a
@@ -164,7 +164,7 @@ Returns λ values on the critical curve associated with a given r.
 
   `a` : Blackhole spin
 """
-λcrit(r, a) = a + r / a * (r - 2Δ(r, a) / (r - 1))
+λcrit(r, a) = a + r / a * (r - 2Δ(met, r, a) / (r - 1))
 """
     ηcrit(r::Complex, a)
 
@@ -174,7 +174,7 @@ Returns η values on the critical curve associated with a given r.
 
   `a` : Blackhole spin
 """
-ηcrit(r, a) = (r^3 / a^2) * (4 * Δ(r, a) / (r - 1)^2 - r)
+ηcrit(r, a) = (r^3 / a^2) * (4 * Δ(met, r, a) / (r - 1)^2 - r)
 
 ##----------------------------------------------------------------------------------------------------------------------
 # Radial Stuff
@@ -193,8 +193,8 @@ function rs(met::Kerr, α, β, θs, o::AssymptoticObserver, isindir, n)
       return 0.0, true, 4
     end
   end
-  ηtemp = η(α, β, θo, a)
-  λtemp = λ(α, θo)
+  ηtemp = η(met, α, β, θo, a)
+  λtemp = λ(met, α, θo)
   τ, _, _ = _Gθ(met, sign(β), θs, θo, isindir, n, ηtemp, λtemp)
   if τ != Inf
     return _rs(met, ηtemp, λtemp, τ)
@@ -211,8 +211,8 @@ function rs_mask(met::Kerr, n_init, α, β, θs, o::AssymptoticObserver, isindir
     βbound = (abs(α) >= αmin ? βboundary(met, α, o, θs) : 0.0)
     abs(β) < βbound && return (0.0, true, 4), true
   end
-  ηtemp = η(α, β, θo, a)
-  λtemp = λ(α, θo)
+  ηtemp = η(met, α, β, θo, a)
+  λtemp = λ(met, α, θo)
   #τ = Gθ(α, β, a, θs, θo, isindir, n)[1]
   τ0, τhat, _ = _Gθ(met, sign(β), θs, θo, isindir, n_init, ηtemp, λtemp)
   if τ0 != Inf
@@ -236,8 +236,8 @@ function rs_cumulative!(met::Kerr, rsvals, n_init, α, β, θs, o::AssymptoticOb
       end
     end
   end
-  ηtemp = η(α, β, θo, a)
-  λtemp = λ(α, θo)
+  ηtemp = η(met, α, β, θo, a)
+  λtemp = λ(met, α, θo)
   #τ = Gθ(α, β, a, θs, θo, isindir, n)[1]
   τ0, τhat, _ = _Gθ(sign(β), θs, θo, a, isindir, 0, ηtemp, λtemp)
   if τ0 != Inf
@@ -267,7 +267,7 @@ function _rsmask(met::Kerr, η, λ, τ0, τ)
   νr = true
   νrmask = true
 
-  roots = get_roots(met, η, λ)
+  roots = get_radial_roots(met, η, λ)
   rh = 1 + √(1 - a * a)
   numreals = (abs(imag(roots[1])) > 1e-10 ? 0 : 2) + (abs(imag(roots[3])) > 1e-10 ? 0 : 2)
 
@@ -309,7 +309,7 @@ function _rs(met::Kerr, η, λ, τ)
   ans = 0.0
   νr = true
 
-  roots = get_roots(met, η, λ)
+  roots = get_radial_roots(met, η, λ)
   rh = 1 + √(1 - a^2)
   numreals = (abs(imag(roots[1])) > 1e-10 ? 0 : 2) + (abs(imag(roots[3])) > 1e-10 ? 0 : 2)
 
@@ -526,7 +526,7 @@ Mino time of trajectory between two inclinations for a given screen coordinate
 
   `n` : nth image in orde of amount of minotime traversed
 """
-Gθ(met, α, β, θs, θo, isindir, n) = _Gθ(met::Kerr, sign(β), θs, θo, isindir, n, η(α, β, θo, met.spin), λ(α, θo))
+Gθ(met, α, β, θs, θo, isindir, n) = _Gθ(met::Kerr, sign(β), θs, θo, isindir, n, η(met, α, β, θo, met.spin), λ(met, α, θo))
 
 function _Gθ(met::Kerr, signβ, θs, θo, isindir, n, η, λ)
   a = met.spin
@@ -585,7 +585,7 @@ end
 ##----------------------------------------------------------------------------------------------------------------------
 function p_boyer_lindquist_d(met::Kerr, r, θ, η, λ, νr::Bool, νθ::Bool)
   a = met.spin
-  @SVector [-1, (νr ? 1 : -1) * √abs(r_potential(met, η, λ, r)) / Δ(r, a), λ, (νθ ? 1 : -1) * √abs(θ_potential(met, η, λ, θ))]
+  @SVector [-1, (νr ? 1 : -1) * √abs(r_potential(met, η, λ, r)) / Δ(met, r, a), λ, (νθ ? 1 : -1) * √abs(θ_potential(met, η, λ, θ))]
 end
 
 
@@ -603,9 +603,9 @@ Jacobian which converts Boyer-Lindquist (BL) covector on the right to a ZAMO cov
 function jac_bl2zamo_du(met::Kerr, r, θ)
   a = met.spin
   # coords = {t, r, ϕ, θ}
-  Σt = Σ(r, θ, a)
-  Δt = Δ(r, a)
-  At = A(r, θ, a)
+  Σt = Σ(met, r, θ, a)
+  Δt = Δ(met, r, a)
+  At = A(met, r, θ, a)
 
   return @SMatrix [# Eq 3.1 1972ApJ...178..347B
     √(At / (Σt * Δt)) 0.0         2*a*r/√(At * Σt * Δt) 0.0
@@ -628,9 +628,9 @@ Jacobian which converts ZAMO covector on the right to a Boyer-Lindquist (BL) cov
 """
 function jac_zamo2bl_du(met::Kerr, r, θ)
   a = met.spin
-  Σt = Σ(r, θ, a)
-  Δt = Δ(r, a)
-  At = A(r, θ, a)
+  Σt = Σ(met, r, θ, a)
+  Δt = Δ(met, r, a)
+  At = A(met, r, θ, a)
 
   return @SMatrix [
     # coords = {t, r, ϕ, θ}
@@ -643,9 +643,9 @@ end
 
 function jac_bl2zamo_ud(met::Kerr, r, θ)
   a = met.spin
-  Σt = Σ(r, θ, a)
-  Δt = Δ(r, a)
-  At = A(r, θ, a)
+  Σt = Σ(met, r, θ, a)
+  Δt = Δ(met, r, a)
+  At = A(met, r, θ, a)
 
   return @SMatrix [#  Eq 3.2 1972ApJ...178..347B
     # coords = {t, r, ϕ, θ}
@@ -658,9 +658,9 @@ end
 
 function jac_zamo2bl_ud(met::Kerr, r, θ)
   a = met.spin
-  Σt = Σ(r, θ, a)
-  Δt = Δ(r, a)
-  At = A(r, θ, a)
+  Σt = Σ(met, r, θ, a)
+  Δt = Δ(met, r, a)
+  At = A(met, r, θ, a)
 
   return @SMatrix [
     # coords = {t, r, ϕ, θ}
@@ -671,7 +671,7 @@ function jac_zamo2bl_ud(met::Kerr, r, θ)
   ]
 end
 
-function jac_zamo2fluid_ud(β, θ, φ)
+function jac_zamo2fluid_ud(met::Kerr, β, θ, φ)
   γ = 1 / √(1 - β^2)
   sinφ = sin(φ)
   cosφ = cos(φ)
@@ -720,19 +720,19 @@ function calcPol(met::Kerr, α, β, ri, θs, θo, cross_spec_index, magfield::SV
   θz = βfluid[2]
   ϕz = βfluid[3]
 
-  ηtemp = η(α, β, θo, a)
-  λtemp = λ(α, θo)
+  ηtemp = η(met, α, β, θo, a)
+  λtemp = λ(met, α, θo)
   p_bl_d = p_boyer_lindquist_d(met, ri, θs, ηtemp, λtemp, νr, θsign)
 
   p_bl_u = met_uu(met, ri, θs) * p_bl_d
   p_zamo_u = jac_bl2zamo_ud(met, ri, θs) * p_bl_u
-  p_fluid_u = jac_zamo2fluid_ud(βv, θz, ϕz) * p_zamo_u
+  p_fluid_u = jac_zamo2fluid_ud(met, βv, θz, ϕz) * p_zamo_u
   magfieldx, magfieldy, magfieldz = magfield
   _, p_fluid_ux, p_fluid_uy, p_fluid_uz = p_fluid_u ./ p_fluid_u[1]
   vec = @SVector[p_fluid_uy * magfieldz - p_fluid_uz * magfieldy, p_fluid_uz * magfieldx - p_fluid_ux * magfieldz, p_fluid_ux * magfieldy - p_fluid_uy * magfieldx]
   norm = √sum(vec .* vec) + eps()
   f_fluid_u = SVector(zero(eltype(vec)), vec[1], vec[2], vec[3])
-  f_zamo_u = jac_zamo2fluid_ud(-βv, θz, ϕz) * f_fluid_u
+  f_zamo_u = jac_zamo2fluid_ud(met, -βv, θz, ϕz) * f_fluid_u
   f_bl_u = jac_zamo2bl_ud(met, ri, θs) * f_zamo_u
   A = @SMatrix [
     0.0   1.0           0.0         0.0
