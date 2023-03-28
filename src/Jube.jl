@@ -44,8 +44,10 @@ include("profiles/GaussianRing.jl")
 
 # Metric Exports
 #--------------------------------------------------------------------------
+export horizon, Kerr, get_roots, rs, calcPol, η, λ
+
 # Space Time Event Declaration
-export AssympototicObserver, getCoordinates, horizon, Kerr, get_roots
+export AssympototicObserver, getCoordinates
 
 abstract type AbstractSpaceTimeEvent end
 function getCoordinates(event::AbstractSpaceTimeEvent) 
@@ -61,8 +63,8 @@ function getCoordinates(observer::AssymptoticObserver)
 end
 
 abstract type AbstractMetric end
-function met_dd(met::AbstractMetric, args...) @error("The metric has not been defined for $(typeof(met))")end
-function met_uu(met::AbstractMetric, args...) inv(met_dd(met::AbstractMetric, args...)) end
+function metric_dd(met::AbstractMetric, args...) @error("The metric has not been defined for $(typeof(met))")end
+function metric_uu(met::AbstractMetric, args...) inv(metric_dd(met::AbstractMetric, args...)) end
 #TODO: Define a default inversion scheme
 
 include("metrics/Kerr.jl")

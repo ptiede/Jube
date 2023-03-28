@@ -1,10 +1,17 @@
-const DEBUG = Ref[]
 # Metric Definition
 ##----------------------------------------------------------------------------------------------------------------------
 struct Kerr <: AbstractMetric
     spin::Float64
 end
 
+"""
+    horizon(met::Kerr)
+
+Horizon for the Kerr metric.
+
+    `met` : Kerr Metric
+
+"""
 horizon(met::Kerr) = 1 + √(1 - met.spin^2)
 
 Δ(met::Kerr, r, a) = r^2 - 2r + a^2
@@ -21,7 +28,7 @@ rtilden(a) = 2 * (1 + Cos(2 / 3 * acos(-a)))
 
 
 """
-    met_uu(met::Kerr, r, θ)
+    metric_uu(met::Kerr, r, θ)
 
 Inverse Kerr Metric in Boyer Lindquist (BL) coordinates.
 
@@ -31,7 +38,7 @@ Inverse Kerr Metric in Boyer Lindquist (BL) coordinates.
     
     `θ` : Inclination 
 """
-function met_uu(met::Kerr, r, θ)
+function metric_uu(met::Kerr, r, θ)
   a = met.spin
   Ξt = Ξ(met, r, θ, a)
   Σt = Σ(met, r, θ, a)
@@ -45,6 +52,34 @@ function met_uu(met::Kerr, r, θ)
     0.0             0.0     0.0                             1/Σt
   ]
 end
+
+"""
+    metric_dd(met::Kerr, r, θ)
+
+Inverse Kerr Metric in Boyer Lindquist (BL) coordinates.
+
+    `met` : Kerr Metric
+
+    `r` : Radius
+    
+    `θ` : Inclination 
+"""
+function metric_dd(met::Kerr, r, θ)
+  a = met.spin
+  Ξt = Ξ(met, r, θ, a)
+  Σt = Σ(met, r, θ, a)
+  Δt = Δ(met, r, a)
+  ωt = ω(met, r, θ, a)
+  sin2 = sin(θ)^2
+
+  return @SMatrix [ #Eq 1 2105.09440
+    -(Δt*Σt/Ξt)+(Ξt*ωt^2*sin2/Σt)     0.0       -Ξt*ωt*sin2/Σt     0.0
+    0.0                               Σt/Δt     0.0                0.0
+    -Ξt*ωt*sin2/Σt                    0.0       Ξt*sin2/Σt         0.0
+    0.0                               0.0       0.0                Σt
+  ]
+end
+
 
 
 # Follows the Formalism of Gralla & Lupsasca (https://arxiv.org/pdf/1910.12881.pdf)
@@ -191,16 +226,18 @@ function rs(met::Kerr, α, β, θs, o::AssymptoticObserver, isindir, n)
     αmin = αboundary(met, θs)
     βbound = (abs(α) >= αmin + eps() ? βboundary(met, α, o, θs) : 0.0)
     if abs(β) + eps() < βbound
-      return 0.0, true, 4
+      #return 0.0, true, 4
+      return 0.0
     end
   end
   ηtemp = η(met, α, β, θo, a)
   λtemp = λ(met, α, θo)
   τ, _, _ = _Gθ(met, sign(β), θs, θo, isindir, n, ηtemp, λtemp)
   if τ != Inf
-    return _rs(met, ηtemp, λtemp, τ)
+    return _rs(met, ηtemp, λtemp, τ)[1]
   else
-    return (0.0, true, 4)
+    return 0.0
+    #return (0.0, true, 4)
   end
 end
 
@@ -218,13 +255,13 @@ function rs_mask(met::Kerr, n_init, α, β, θs, o::AssymptoticObserver, isindir
   τ0, τhat, _ = _Gθ(met, sign(β), θs, θo, isindir, n_init, ηtemp, λtemp)
   if τ0 != Inf
     τ = τ0 + τhat
-    return _rsmask(met, ηtemp, λtemp, τ0, τ)
+    return _rs_mask(met, ηtemp, λtemp, τ0, τ)
   else
     return (0.0, true, 4), true
   end
 end
 
-function _rsmask(met::Kerr, η, λ, τ0, τ)
+function _rs_mask(met::Kerr, η, λ, τ0, τ)
   a = met.spin
   ans = 0.0
   ansmask = 0.0
@@ -690,7 +727,7 @@ function calcPol(met::Kerr, α, β, ri, θs, θo, cross_spec_index, magfield::SV
   λtemp = λ(met, α, θo)
   p_bl_d = p_boyer_lindquist_d(met, ri, θs, ηtemp, λtemp, νr, θsign)
 
-  p_bl_u = met_uu(met, ri, θs) * p_bl_d
+  p_bl_u = metric_uu(met, ri, θs) * p_bl_d
   p_zamo_u = jac_bl2zamo_ud(met, ri, θs) * p_bl_u
   p_fluid_u = jac_zamo2fluid_ud(met, βv, θz, ϕz) * p_zamo_u
   magfieldx, magfieldy, magfieldz = magfield

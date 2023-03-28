@@ -1,7 +1,3 @@
-import Pkg;
-Pkg.activate((@__DIR__))
-Pkg.add(url="https://github.com/dchang10/FastElliptic.git");
-Pkg.develop(url=abspath((@__DIR__)*"/../"));
 using Jube
 using Test
 using JSON
@@ -28,18 +24,18 @@ function _make_pol_data_field(met::Kerr, αmax, βmax, n, steps, θs, o, B, βfl
         α = αvals[_i]
         for _j in 1:(2steps)
             β = βvals[_j]
-            rstemp, νrtemp, numroots = rs(met, α, β, θs, o, true, n)
+            rstemp, νrtemp, numroots = Jube.rs(met, α, β, θs, o, true, n)
             evalpol = (rstemp >= rh && rstemp != Inf)
-            sintemp, costemp =  evalpol ? calcPol(met, α, β, rstemp, θs, θo, 1.0, B, βfluid, νrtemp, νθtrue) : (0., 0.)
+            sintemp, costemp =  evalpol ? Jube.calcPol(met, α, β, rstemp, θs, θo, 1.0, B, βfluid, νrtemp, νθtrue) : (0., 0.)
 
             rsvals[_i][_j] = rstemp
             rootvals[_i][_j] = numroots
             sinvals[_i][_j] = sintemp * αmax 
             cosvals[_i][_j] = costemp * βmax
 
-            rstemp, νrtemp, numroots = rs(met, α, β, θs, o, false, n)
+            rstemp, νrtemp, numroots = Jube.rs(met, α, β, θs, o, false, n)
             evalpol = (rstemp >= rh && rstemp != Inf)
-            sintemp, costemp =  evalpol ? calcPol(α, β, rstemp, θs, θo, 1.0, B, βfluid, νrtemp, νθfalse) : (0., 0.)
+            sintemp, costemp =  evalpol ? Jube.calcPol(α, β, rstemp, θs, θo, 1.0, B, βfluid, νrtemp, νθfalse) : (0., 0.)
 
             rsvals2[_i][_j] += rstemp
             rootvals[_i][_j] = numroots
@@ -54,9 +50,7 @@ function _make_pol_data_field(met::Kerr, αmax, βmax, n, steps, θs, o, B, βfl
     return rsvals, rootvals, sinvals, cosvals
 end
 
-
-
-function _make_radial_data_field(met::Kerr, αmax, βmax, n, a, steps, θs, o) 
+function _make_radial_data_field(met::Kerr, αmax, βmax, n, steps, θs, o) 
     θo = o.inclination
 
     αvals = LinRange(-αmax,αmax, 2steps)
@@ -69,12 +63,12 @@ function _make_radial_data_field(met::Kerr, αmax, βmax, n, a, steps, θs, o)
         α = αvals[_i]
         for _j in 1:(2steps)
             β = βvals[_j]
-            rstemp, νrtemp, numroots = rs(α, β, θs, θo, a, true, n)
+            rstemp, νrtemp, numroots = Jube.rs(met, α, β, θs, o, true, n)
 
             rsvals[_i][_j] = rstemp
             rootvals[_i][_j] = numroots
 
-            rstemp, νrtemp, numroots = rs(α, β, θs, θo, a, false, n)
+            rstemp, νrtemp, numroots = Jube.rs(met, α, β, θs, o, false, n)
 
             rsvals2[_i][_j] += rstemp
             rootvals[_i][_j] = numroots
@@ -87,8 +81,7 @@ function _make_radial_data_field(met::Kerr, αmax, βmax, n, a, steps, θs, o)
     return rsvals, rootvals
 end
 
-
-@testset "roots" begin
+@testset "get_roots" begin
     # test Schwarzschild
     @test all(isapprox.(Jube.get_radial_roots(Kerr(0.0), 27, 0.), (-6, 0, 3, 3), rtol=1e-5))
     @test all(isapprox.(Jube.get_radial_roots(Kerr(0.0), 0., √27.), (-6, 0, 3, 3), rtol=1e-5))
@@ -127,7 +120,7 @@ end
 
         met = Kerr(a)
         o = Jube.AssymptoticObserver(1, θo)
-        testrsvals, testrootsvals = _make_radial_data_field(met, αmax, βmax, n, a, steps, θs, o)
+        testrsvals, testrootsvals = _make_radial_data_field(met, αmax, βmax, n, steps, θs, o)
         @test begin
              (abs(maximum(maximum.(rsvals .- testrsvals))) < eps())
         end
