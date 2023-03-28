@@ -1,3 +1,4 @@
+const DEBUG = Ref[]
 # Metric Definition
 ##----------------------------------------------------------------------------------------------------------------------
 struct Kerr <: AbstractMetric
@@ -221,43 +222,6 @@ function rs_mask(met::Kerr, n_init, α, β, θs, o::AssymptoticObserver, isindir
   else
     return (0.0, true, 4), true
   end
-end
-
-function rs_cumulative!(met::Kerr, rsvals, n_init, α, β, θs, o::AssymptoticObserver, isindir)
-  θo = o.inclination
-  a = met.spin
-  n = length(rsvals)
-  if abs(cos(θs)) > abs(cos(θo))
-    αmin = αboundary(met, θs)
-    βbound = (abs(α) >= αmin ? βboundary(met, α, o, θs) : 0.0)
-    if abs(β) < βbound
-      for i in 1:n
-        rsvals[i] = (0.0, true, 4)
-      end
-    end
-  end
-  ηtemp = η(met, α, β, θo, a)
-  λtemp = λ(met, α, θo)
-  #τ = Gθ(α, β, a, θs, θo, isindir, n)[1]
-  τ0, τhat, _ = _Gθ(sign(β), θs, θo, a, isindir, 0, ηtemp, λtemp)
-  if τ0 != Inf
-    τ = τ0 + n_init * τhat
-    currrs = (1000.0, true, 4)
-    for i in 1:n
-      if currrs[1] != 0.0
-        currrs = _rs(ηtemp, λtemp, a, τ)
-        rsvals[i] = currrs
-        τ += τhat
-      else
-        rsvals[i] = (0.0, true, 4)
-      end
-    end
-  else
-    for i in 1:n
-      rsvals[i] = (0.0, true, 4)
-    end
-  end
-  return nothing
 end
 
 function _rsmask(met::Kerr, η, λ, τ0, τ)
@@ -715,6 +679,8 @@ end
 evpa(fα, fβ) = atan(-fα, fβ)
 
 function calcPol(met::Kerr, α, β, ri, θs, θo, cross_spec_index, magfield::SVector{3, Float64}, βfluid::SVector{3, Float64}, νr::Bool, θsign::Bool)
+  ri <= horizon(met) && return 0.0, 0.0, 0.0, 0.0
+
   a = met.spin
   βv = βfluid[1]
   θz = βfluid[2]
