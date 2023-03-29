@@ -44,29 +44,32 @@ include("profiles/GaussianRing.jl")
 
 # Metric Exports
 #--------------------------------------------------------------------------
-export horizon, Kerr, get_roots, rs, calcPol, η, λ
+export metric_uu, metric_dd, horizon, Kerr, get_roots, rs, calcPol, η, λ
 
 # Space Time Event Declaration
-export AssympototicObserver, getCoordinates
+export AssympototicObserver, get_coordinates
 
 abstract type AbstractSpaceTimeEvent end
-function getCoordinates(event::AbstractSpaceTimeEvent) 
-    @error "getCoordinates has not been defined for $(typeof(event))"
+function get_coordinates(event::AbstractSpaceTimeEvent) 
+    throw("get_coordinates has not been defined for even of type: $(typeof(event))")
 end
-
 struct AssymptoticObserver{P,O} <: AbstractSpaceTimeEvent
     azimuth::P
     inclination::O
 end
-function getCoordinates(observer::AssymptoticObserver)
-    return (distance=observer.distance, observer=observer.inclination)
+function get_coordinates(observer::AssymptoticObserver)
+    return (azimuth=observer.azimuth, inclination=observer.inclination)
 end
 
 abstract type AbstractMetric end
-function metric_dd(met::AbstractMetric, args...) @error("The metric has not been defined for $(typeof(met))")end
-function metric_uu(met::AbstractMetric, args...) inv(metric_dd(met::AbstractMetric, args...)) end
-#TODO: Define a default inversion scheme
-
+#function metric_dd(met::AbstractMetric) @error("The metric has not been defined for $(typeof(met))")end
+function metric_dd(metric::AbstractMetric, args...) ::AbstractMatrix
+    throw(MethodError(metric_dd, (metric, args...)))
+    return [1 0; 0 1]
+end
+function metric_uu(metric::AbstractMetric, args...) ::AbstractMatrix
+    try return inv(metric_dd(metric::AbstractMetric, args...)) catch err throw(err) end 
+end
 include("metrics/Kerr.jl")
 
 # Emission Exports
