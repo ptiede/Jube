@@ -1,6 +1,6 @@
 # metric Definition
 ##----------------------------------------------------------------------------------------------------------------------
-struct Kerr <: Abstractmetric
+struct Kerr <: AbstractMetric
     spin::Float64
 end
 
@@ -288,7 +288,6 @@ function _rs_mask(metric::Kerr, η, λ, τ0, τ)
 end
 
 
-
 """
   _rs(metric::Kerrk, η, λ, τ)
 
@@ -378,6 +377,27 @@ function _rs_case4(metric::Kerr, roots, rh, τ)
   den = 1 + go * FastElliptic.sc(X4, k4)
 
   return -(a2 * num / den + b1), X4 > 0
+end
+
+#TODO: define radial minotime
+function Ir(metric::Kerr, νr::Bool, rs, η, λ)
+  ans = 0.0
+
+  roots = get_radial_roots(metric, η, λ)
+  numreals = (abs(imag(roots[1])) > 1e-10 ? 0 : 2) + (abs(imag(roots[3])) > 1e-10 ? 0 : 2)
+  root_diffs = get_root_diffs(roots...)
+
+  if numreals == 4 #case 1 & 2
+    ans = I2r(metric, real.(roots), root_diffs, rs, νr)
+  elseif numreals == 2 #case3
+    if abs(imag(roots[4])) < 1e-10
+      roots = (roots[1], roots[4], roots[2], roots[3])
+    end
+    ans = I3r(metric, real.(roots), root_diffs, rs)
+  else #case 4
+    ans = I4r(metric, real.(roots), root_diffs, rs)
+  end
+  return ans
 end
 
 function I2r_turn(metric::Kerr, root_diffs::NTuple{5})
@@ -501,7 +521,6 @@ function I4r(metric::Kerr, roots, root_diffs, rs)
   return Ir_full - Ir_s
 end
 
-#
 ##----------------------------------------------------------------------------------------------------------------------
 # θ Stuff
 ##----------------------------------------------------------------------------------------------------------------------
@@ -524,9 +543,9 @@ Mino time of trajectory between two inclinations for a given screen coordinate
 
   `n` : nth image in orde of amount of minotime traversed
 """
-mino_time(metric, α, β, θs, θo, isindir, n) = Gθ(metric, α, β, θs, θo, isindir, n)
+mino_time(metric::Kerr, α, β, θs, θo, isindir, n) = Gθ(metric, α, β, θs, θo, isindir, n)
 
-Gθ(metric, α, β, θs, θo, isindir, n) = _Gθ(metric::Kerr, sign(β), θs, θo, isindir, n, η(metric, α, β, θo, metric.spin), λ(metric, α, θo))
+Gθ(metric::Kerr, α, β, θs, θo, isindir, n) = _Gθ(metric::Kerr, sign(β), θs, θo, isindir, n, η(metric, α, β, θo, metric.spin), λ(metric, α, θo))
 
 function _Gθ(metric::Kerr, signβ, θs, θo, isindir, n, η, λ)
   a = metric.spin
@@ -572,13 +591,68 @@ function _Gθ(metric::Kerr, signβ, θs, θo, isindir, n, η, λ)
     Go = tempfac * FastElliptic.F(asin(argo), k)
     Gs = tempfac * FastElliptic.F(asin(args), k)
     Ghat = 2tempfac * FastElliptic.K(k)
-
   end
 
   νθ = isincone ? (n % 2 == 1) ⊻ (θo > θs) : !isindir ⊻ (θs > π / 2)
   minotime = real(isindir ? (n + 1) * Ghat - signβ * Go + (νθ ? 1 : -1) * Gs : n * Ghat - signβ * Go + (νθ ? 1 : -1) * Gs) #Sign of Go indicates whether the ray is from the forward cone or the rear cone
+  #tempΔτ = ((minotime%Ghat + signβ * Go))
+  #Δτ = (tempΔτ)#( tempΔτ < Ghat/2 ? tempΔτ : (tempΔτ%(Ghat/2)) - Ghat/2)
+  #n = floor(minotime/Ghat)
+  #Δτ = isindir ? (-1)^n*signβ*(Ghat - tempΔτ) : (-1)^n*signβ*tempΔτ
+  #println("$Δτ, $Gs, $Go $θs $(floor(minotime/Ghat))")
   return minotime, Ghat, isvortical
 end
+
+function θs(metric::Kerr, α, β, θo, τ)
+  return _θs(metric, sign(β), θo, η(metric, α, β, θo, metric.spin), λ(metric, α, θo), τ)
+end
+
+function _θs(metric::Kerr, signβ, θo, η, λ, τ)
+  τ == Inf && return Inf
+  a = metric.spin
+  Go, Ghat, Ghat_2, isvortical = 0.0, 0.0, 0.0, η < 0.0
+
+  Δθ = 1 / 2 * (1 - (η + λ^2) / a^2)
+  up = Δθ + √(Δθ^2 + η / a^2)
+  um = Δθ - √(Δθ^2 + η / a^2)
+  m = up / um
+  k = m
+
+  #isvortical = η < 0.
+  argo = 0
+  k = 0
+  tempfac = 1 / √abs(um * a^2)
+  if isvortical
+    argo = (cos(θo)^2 - um) / (up - um)
+    k = 1.0 - m
+    Go = tempfac * FastElliptic.F(asin(√argo), k)
+    Ghat_2 = tempfac * FastElliptic.K(k)
+  else
+    argo = cos(θo) / √(up)
+    k = m
+    Go = tempfac * FastElliptic.F(asin(argo), k)
+    Ghat_2 = tempfac * FastElliptic.K(k)
+  end
+  Ghat = 2Ghat_2
+
+  Δτtemp = (τ%Ghat + signβ * Go)
+  n = floor(τ/Ghat)
+  #Δτ = isindir ? (-1)^n*signβ*(Ghat - Δτtemp) : (-1)^n*signβ*Δτtemp
+  Δτ = argmin(abs, [(-1)^n*signβ*(Ghat - Δτtemp) , (-1)^n*signβ*Δτtemp])
+  ans = 0
+  if isvortical
+    args = abs(FastElliptic.sn(Δτ /tempfac, k)^2)
+    ans = √(args*(up-um) +um)
+  else 
+    ans = √up*FastElliptic.sn(Δτ /tempfac, k)
+  end
+
+  return acos(ans)
+end
+
+##----------------------------------------------------------------------------------------------------------------------
+# ϕ Stuff
+##----------------------------------------------------------------------------------------------------------------------
 
 ##----------------------------------------------------------------------------------------------------------------------
 #Polarization stuff

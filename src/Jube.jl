@@ -44,7 +44,7 @@ include("profiles/GaussianRing.jl")
 
 # Metric Exports
 #--------------------------------------------------------------------------
-export metric_uu, metric_dd, horizon, Kerr, get_roots, rs, calcPol, η, λ
+export metric_uu, metric_dd, horizon, Kerr, get_roots, rs, θs, calcPol, η, λ
 
 # Space Time Event Declaration
 export AssympototicObserver, get_coordinates

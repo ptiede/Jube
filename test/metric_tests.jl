@@ -106,7 +106,6 @@ end
     @test begin 
         roots = Jube.get_radial_roots(Kerr(-0.915), 2.47908, 2.4)
         roots_ans = (-3.820331170598019, 0.07875611823150777, 1.8707875261832558 - 1.8435163296601766im, 1.8707875261832558 + 1.8435163296601766im )
-        print(roots)
         (roots[3] ≈ conj(roots[4])) && all(isapprox.(map(x->real(x)+abs(imag(x))im, roots), map(x->real(x)+abs(imag(x))im, roots_ans), rtol=1e-5))
         
     end
@@ -118,7 +117,47 @@ end
     end
 end
 
-#@testset "emission_radius_field" begin
+@testset "emission coordinates" begin
+    #Test θs inversion
+    @test begin 
+        met = Jube.Kerr(0.6)
+        θo = π/4
+        all_vals = []
+        for i in 1:1:179
+            tempθs = i/180*π
+            if θo*180/π == i || θo*180/π == (180 - i) || i == 90
+                continue
+            end
+            for isindir in [true, false]
+                for n in [0, 1, 2]
+                    for β in -5.1:0.1:5.1
+                        #TODO: Fix behaviour of raytracing for β = 0
+                        if β == 0 
+                            continue
+                        end
+                        for α in -5.1:0.1:5.1
+                            τ = Jube.Gθ(met, α, β, tempθs, θo, isindir, n)[1]
+                            temp = Jube.θs(met, α, β, θo, τ) 
+                            if τ == Inf
+                                append!(all_vals,true)
+                            else
+                                sol = isapprox(((temp)), ((tempθs)), atol=1e-3)
+                                if !sol
+                                    println("$(temp*180/π), $(tempθs*180/π)")
+                                end
+                                append!(all_vals, sol)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        all(all_vals)
+    end
+
+
+end
+        
 #    for radialTestData in readdir((@__DIR__)*"/radialTestData")
 #        path = (@__DIR__)*"/radialTestData/"*radialTestData
 #        data = JSON.parsefile(path)
