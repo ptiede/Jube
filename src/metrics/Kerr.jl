@@ -1,5 +1,12 @@
 # metric Definition
 ##----------------------------------------------------------------------------------------------------------------------
+function elliptic_pi(n::Float64, φ::Float64, m::Float64)
+  return ArbNumerics.elliptic_pi(ArbFloat(n), ArbFloat(φ), ArbFloat(m))
+end
+function elliptic_pi(n::Float64, m::Float64)
+  return ArbNumerics.elliptic_pi(ArbFloat(n), ArbFloat(m))
+end
+
 struct Kerr <: AbstractMetric
     spin::Float64
 end
@@ -380,6 +387,12 @@ function _rs_case4(metric::Kerr, roots, rh, τ)
 end
 
 #TODO: define radial minotime
+
+function Ir(metric::Kerr, νr::Bool, θo, rs, α, β)
+  a = metric.spin
+  return Ir(metric::Kerr, νr::Bool, rs, η(metric, α, β, θo, a), λ(metric, α, θo))
+end
+
 function Ir(metric::Kerr, νr::Bool, rs, η, λ)
   ans = 0.0
 
@@ -388,7 +401,7 @@ function Ir(metric::Kerr, νr::Bool, rs, η, λ)
   root_diffs = get_root_diffs(roots...)
 
   if numreals == 4 #case 1 & 2
-    ans = I2r(metric, real.(roots), root_diffs, rs, νr)
+    ans = I2r(metric, real.(roots), real.(root_diffs), rs, νr)
   elseif numreals == 2 #case3
     if abs(imag(roots[4])) < 1e-10
       roots = (roots[1], roots[4], roots[2], roots[3])
@@ -418,9 +431,9 @@ function I2r(metric::Kerr, roots::NTuple{4}, root_diffs::NTuple{5}, rs, isindir)
   Ir_turn = I2r_turn(metric, root_diffs)
 
   if isindir
-    return Ir_turn + Ir_s
-  else
     return Ir_turn - Ir_s
+  else
+    return Ir_turn + Ir_s
   end
 end
 
@@ -436,8 +449,8 @@ function I3r_full(metric::Kerr, root_diffs)
   k3 = ((A + B)^2 - r21^2) / (4A * B)
 
   temprat = B / A
-  x3_turn = real(√((1 + 0im - temprat) / (1 + temprat)))
-  return 2 / √real(A * B) * FastElliptic.F(acos(x3_turn), k3)
+  x3_turn = real(((A - B) / (A + B)))
+  return 1 / √real(A * B) * FastElliptic.F(acos(x3_turn), k3)
 end
 
 function I3r(metric::Kerr, roots, root_diffs, rs)
@@ -449,36 +462,20 @@ function I3r(metric::Kerr, roots, root_diffs, rs)
   if A2 < 0.0 || B2 < 0
     return 0
   end
-
   A, B = √A2, √B2
 
-
-  k3 = real(((A + B)^2 - r21^2) / (4A * B))
+  k3 = real(((A + B)^2 - r21^2) / (4*A * B))
   temprat = B * (rs - r2) / (A * (rs - r1))
-  x3_s = real(√((1 + 0im - temprat) / (1 + temprat)))
-  Ir_s = 2 / √real(A * B) * FastElliptic.F(real(acos(x3_s)), k3)
+  x3_s = real(((1 + 0im - temprat) / (1 + temprat)))
+  Ir_s = 1 / √real(A * B) * FastElliptic.F((acos(x3_s)), k3)
   Ir_full = I3r_full(metric, root_diffs)
 
-  return abs(Ir_full - Ir_s)
+  return Ir_full - Ir_s
 end
 
 function I4r_full(metric::Kerr, roots, root_diffs)
   r1, _, _, r4 = roots
   _, r31, r32, r41, r42 = root_diffs
-
-  #try
-  #  C = √real(r31*r42)
-  #  D = √real(r32*r41)
-  #  k4 = 4C*D/(C+D)^2
-  #  a2 = abs(imag(r1))
-
-  #  k4 = 4*C*D/(C+D)^2
-  #  
-  #  go = √max((4a2^2 - (C-D)^2) / ((C+D)^2 - 4a2^2), 0.)
-  #  return 2/(C+D)*FastElliptic.F(π/2 + atan(go), k4) 
-  #catch e
-  #  return 0
-  #end
 
   arg1 = real(r31 * r42)
   arg2 = real(r32 * r41)
@@ -493,7 +490,7 @@ function I4r_full(metric::Kerr, roots, root_diffs)
   k4 = 4 * C * D / (C + D)^2
 
   go = √max((4a2^2 - (C - D)^2) / ((C + D)^2 - 4a2^2), 0.0)
-  return 2 / (C + D) * FastElliptic.F(π / 2 + atan(go), k4)
+  return 1 / (C + D) * FastElliptic.F(π / 2 + atan(go), k4)
 
 
 end
@@ -521,6 +518,176 @@ function I4r(metric::Kerr, roots, root_diffs, rs)
   return Ir_full - Ir_s
 end
 
+function I2ϕ(metric::Kerr, roots::NTuple{4}, root_diffs::NTuple{5}, rs, isindir, λ)
+  _, _, r3, r4 = roots
+  r21, r31, r32, r41, r42 = root_diffs
+  r43 = r4-r3
+  a = metric.spin
+  rp = 1 + √(1-a^2)
+  rm = 1 - √(1-a^2)
+  rp3 = rp - r3
+  rp4 = rp - r4
+  rm3 = rm - r3
+  rm4 = rm - r4
+
+  k = r32 * r41 / (r31 * r42)
+  x2_s = √((rs - r4) / (rs - r3) * r31 / r41)
+  x2_o = √(r31 / r41)
+  !(-1 < x2_s < 1) && return 0.0
+
+  Fo = 2 / √real(r31 * r42) * FastElliptic.F(asin(x2_o), k)
+  Fs = 2 / √real(r31 * r42) * FastElliptic.F(asin(x2_s), k)
+
+
+  coef_p = 2/√(r31*r42)*r43/(rp3*rp4)
+  coef_m = 2/√(r31*r42)*r43/(rm3*rm4)
+  Πp_s = coef_p*elliptic_pi(rp3*r41/(rp4*r31), asin(x2_s), k)
+  Πp_turn = coef_p*elliptic_pi(rp3*r41/(rp4*r31), asin(x2_o), k)
+  Πm_s = coef_m*elliptic_pi(rm3*r41/(rm4*r31), asin(x2_s), k)
+  Πm_turn = coef_m*elliptic_pi(rm3*r41/(rm4*r31), asin(x2_o), k)
+
+  Ip_s = -Πp_s - Fs/rp3
+  Ip_turn = -Πp_turn - Fo/rp3
+  Im_s = -Πm_s - Fs/rm3
+  Im_turn = -Πm_turn - Fo/rm3
+
+  Ip = Ip_turn #- Ip_s
+  Im = Im_turn #- Im_s
+  #if !isindir
+    Ip -= Ip_s
+    Im -= Im_s
+  #else
+  #  Ip += Ip_s
+  #  Im += Im_s
+  #end
+
+  return 2a/(rp-rm)*((rp-a*λ/2)*Ip - (rm-a*λ/2)*Im)
+end
+
+function p1(α, j)
+  √((α^2-1)/(j+(1-j)*α^2))
+end
+
+function f1(α, sinφ, j)
+  p1temp = p1(α, j)
+  tempsinφ = √(1-j*sinφ^2)
+  return p1temp/2*log(abs((p1temp*tempsinφ + sinφ)/(p1temp*tempsinφ - sinφ)))
+end
+
+function R1(α, φ, j)
+  return 1/(1-α^2)*(elliptic_pi(α^2/(α^2-1), φ, j) - α*f1(α, sin(φ), j))
+end
+
+function I3ϕ(metric::Kerr, roots::NTuple{4}, root_diffs::NTuple{5}, rs, isindir, λ)
+  r1, r2, _, _ = roots
+  r21, r31, r32, r41, r42 = root_diffs
+  a = metric.spin
+  rp = 1 + √(1-a^2)
+  rm = 1 - √(1-a^2)
+  rp1 = real(rp - r1)
+  rp2 = real(rp - r2)
+  rm1 = real(rm - r1)
+  rm2 = real(rm - r2)
+
+  A2 = real(r32 * r42)
+  B2 = real(r31 * r41)
+  if A2 < 0.0 || B2 < 0
+    return 0
+  end
+  A, B = √A2, √B2
+
+  k3 = real(((A + B)^2 - r21^2) / (4*A * B))
+  temprat = B * (rs - r2) / (A * (rs - r1))
+  x3_s = real(((1 - temprat) / (1 + temprat)))
+  x3_o = (A-B)/(A+B)
+  φ_s = acos(x3_s)
+  φ_o = acos(x3_o)
+
+  αp = (B*rp2+A*rp1)/(B*rp2-A*rp1)
+  αm = (B*rm2+A*rm1)/(B*rm2-A*rm1)
+
+  Fr_s = 1 / √real(A * B) * FastElliptic.F(φ_s, k3)
+  Fr_turn = 1 / √real(A * B) * FastElliptic.F(φ_o, k3)
+
+  R1p_s = R1(αp, φ_s, k3)
+  R1p_turn = R1(αp, φ_o, k3)
+  R1m_s = R1(αm, φ_s, k3)
+  R1m_turn = R1(αm, φ_o, k3)
+
+  Ip_s = -1/(B*rp2+A*rp1)*((B+A)*Fr_s + 2*r21*√(A*B)/(B*rp2-A*rp1)*R1p_s)
+  Ip_turn = -1/(B*rp2+A*rp1)*((B+A)*Fr_turn + 2*r21*√(A*B)/(B*rp2-A*rp1)*R1p_turn)
+  Im_s = -1/(B*rm2+A*rm1)*((B+A)*Fr_s + 2*r21*√(A*B)/(B*rm2-A*rm1)*R1m_s)
+  Im_turn = -1/(B*rm2+A*rm1)*((B+A)*Fr_turn + 2*r21*√(A*B)/(B*rm2-A*rm1)*R1m_turn)
+
+  Ip = Ip_turn - Ip_s
+  Im = Im_turn - Im_s
+  #if !isindir
+    #Ip -= Ip_s
+    #Im -= Im_s
+  #else
+  #  Ip += Ip_s
+  #  Im += Im_s
+  #end
+
+
+  return real(2a/(rp-rm)*((rp-a*λ/2)*Ip - (rm-a*λ/2)*Im))
+end
+
+function f2(α, sinφ, j)
+ p2 = √((1+α^2)/(1-j+α^2))
+ return p2/2*log(abs((1-p2)/(1+p2)*(1+p2*√(1-j*sinφ^2))/(1-p2*√(1-j*sinφ^2))))
+end
+function S1(α, φ, j)
+  return 1/(1+α^2)*(FastElliptic.F(φ, j) + α^2elliptic_pi(1+α^2, φ,j) - α*f2(α, sin(φ), j))
+end
+function I4ϕ(metric::Kerr, roots::NTuple{4}, root_diffs::NTuple{5}, rs, λ)
+  a = metric.spin
+  r1, _, _, r4 = roots
+  _, r31, r32, r41, r42 = root_diffs
+  rp = 1 + √(1-a^2)
+  rm = 1 - √(1-a^2)
+
+  if real(r32 * r41) < 0 || real(r31 * r42) < 0
+    return 0
+  end
+
+  C = √real(r31 * r42)
+  D = √real(r32 * r41)
+  k4 = 4C * D / (C + D)^2
+  a2 = abs(imag(r1))
+  b1 = real(r4)
+
+  k4 = 4 * C * D / (C + D)^2
+
+  x4_s = (rs + b1) / a2
+  x4_p = (rp + b1) / a2
+  x4_m = (rm + b1) / a2
+
+
+  go = √max((4a2^2 - (C - D)^2) / ((C + D)^2 - 4a2^2), 0.0)
+  gp = (go*x4_p-1)/(go +x4_p)
+  gm = (go*x4_m-1)/(go +x4_m)
+
+  S1p_s = S1(gp, atan(x4_s) + atan(go), k4)
+  S1p_full = S1(gp, π/2 + atan(go), k4)
+  S1m_s = S1(gm, atan(x4_s) + atan(go), k4)
+  S1m_full = S1(gm, π/2 + atan(go), k4)
+
+  Fr_s = 2 / (C + D) * FastElliptic.F(atan(x4_s) + atan(go), k4)
+  Fr_full = 2 / (C + D) * FastElliptic.F(π / 2 + atan(go), k4)
+
+  Ip_s = go/(a2*(1-go*x4_p))*(Fr_s - 2/(C+D)*((1+go^2)/(go*(go+x4_p)))*S1p_s)
+  Ip_full = go/(a2*(1-go*x4_p))*(Fr_full - 2/(C+D)*((1+go^2)/(go*(go+x4_p)))*S1p_full)
+  Im_s = go/(a2*(1-go*x4_m))*(Fr_s - 2/(C+D)*((1+go^2)/(go*(go+x4_p)))*S1m_s)
+  Im_full = go/(a2*(1-go*x4_m))*(Fr_full - 2/(C+D)*((1+go^2)/(go*(go+x4_p)))*S1m_full)
+
+  Ip = Ip_full - Ip_s
+  Im = Im_full - Im_s
+
+  return real(2a/(rp-rm)*((rp-a*λ/2)*Ip - (rm-a*λ/2)*Im))
+ 
+end
+
 ##----------------------------------------------------------------------------------------------------------------------
 # θ Stuff
 ##----------------------------------------------------------------------------------------------------------------------
@@ -543,7 +710,7 @@ Mino time of trajectory between two inclinations for a given screen coordinate
 
   `n` : nth image in orde of amount of minotime traversed
 """
-mino_time(metric::Kerr, α, β, θs, θo, isindir, n) = Gθ(metric, α, β, θs, θo, isindir, n)
+mino_time(metric::Kerr, α, β, θs, θo, isindir, n) = Gθ(metric, α, β, θs, θo, isindir, n)[1]
 
 Gθ(metric::Kerr, α, β, θs, θo, isindir, n) = _Gθ(metric::Kerr, sign(β), θs, θo, isindir, n, η(metric, α, β, θo, metric.spin), λ(metric, α, θo))
 
@@ -553,10 +720,10 @@ function _Gθ(metric::Kerr, signβ, θs, θo, isindir, n, η, λ)
 
   isincone = abs(cos(θs)) < abs(cos(θo))
   if isincone && (isindir != ((signβ > 0) ⊻ (θo > π / 2)))
-    return Inf, Inf, isvortical
+    return Inf, Inf, Inf, isvortical
   end
   if ((((signβ < 0) ⊻ (θs > π / 2)) ⊻ (n % 2 == 1)) && !isincone && !isvortical) || (isvortical && ((θo >= π / 2) ⊻ (θs > π / 2)))
-    return Inf, Inf, isvortical
+    return Inf, Inf, Inf, isvortical
   end
 
   Δθ = 1 / 2 * (1 - (η + λ^2) / a^2)
@@ -574,7 +741,7 @@ function _Gθ(metric::Kerr, signβ, θs, θo, isindir, n, η, λ)
     argo = (cos(θo)^2 - um) / (up - um)
     k = 1.0 - m
     if (!(0.0 < argo < 1.0) || !(0.0 < args < 1.0))
-      return Inf, Ghat, isvortical
+      return Inf, Gs, Ghat, isvortical
     end
     tempfac = 1 / √abs(um * a^2)
     Go = ((θs > π / 2) ? -1 : 1) * tempfac * FastElliptic.F(asin(√argo), k)
@@ -585,29 +752,26 @@ function _Gθ(metric::Kerr, signβ, θs, θo, isindir, n, η, λ)
     argo = cos(θo) / √(up)
     k = m
     if !(-1 < args < 1) || !(-1 < argo < 1)
-      return Inf, Ghat, isvortical
+      return Inf, Gs, Ghat, isvortical
     end
     tempfac = 1 / √abs(um * a^2)
+    #println("argo $(asin(argo)), $(k)")
     Go = tempfac * FastElliptic.F(asin(argo), k)
+    #println("args $(asin(args)), $(k)")
     Gs = tempfac * FastElliptic.F(asin(args), k)
     Ghat = 2tempfac * FastElliptic.K(k)
   end
 
   νθ = isincone ? (n % 2 == 1) ⊻ (θo > θs) : !isindir ⊻ (θs > π / 2)
   minotime = real(isindir ? (n + 1) * Ghat - signβ * Go + (νθ ? 1 : -1) * Gs : n * Ghat - signβ * Go + (νθ ? 1 : -1) * Gs) #Sign of Go indicates whether the ray is from the forward cone or the rear cone
-  #tempΔτ = ((minotime%Ghat + signβ * Go))
-  #Δτ = (tempΔτ)#( tempΔτ < Ghat/2 ? tempΔτ : (tempΔτ%(Ghat/2)) - Ghat/2)
-  #n = floor(minotime/Ghat)
-  #Δτ = isindir ? (-1)^n*signβ*(Ghat - tempΔτ) : (-1)^n*signβ*tempΔτ
-  #println("$Δτ, $Gs, $Go $θs $(floor(minotime/Ghat))")
-  return minotime, Ghat, isvortical
+  return minotime, Gs, Ghat, isvortical
 end
 
-function θs(metric::Kerr, α, β, θo, τ)
-  return _θs(metric, sign(β), θo, η(metric, α, β, θo, metric.spin), λ(metric, α, θo), τ)
+function Gs(metric::Kerr, α, β, θo, τ)
+  return _Gs(metric, sign(β), θo, η(metric, α, β, θo, metric.spin), λ(metric, α, θo), τ)
 end
 
-function _θs(metric::Kerr, signβ, θo, η, λ, τ)
+function _Gs(metric::Kerr, signβ, θo, η, λ, τ)
   τ == Inf && return Inf
   a = metric.spin
   Go, Ghat, Ghat_2, isvortical = 0.0, 0.0, 0.0, η < 0.0
@@ -618,41 +782,180 @@ function _θs(metric::Kerr, signβ, θo, η, λ, τ)
   m = up / um
   k = m
 
-  #isvortical = η < 0.
   argo = 0
   k = 0
+  tempfac = 1 / √abs(um * a^2)
+
+  if isvortical
+    argo = (cos(θo)^2 - um) / (up - um)
+    k = 1.0 - m
+    tempfac = 1 / √abs(um * a^2)
+    Go = tempfac * FastElliptic.F(asin(√argo), k)
+    Ghat_2 = tempfac * FastElliptic.K(k)
+    Ghat = 2Ghat_2
+    Δτtemp = (τ%Ghat + (θo > π/2 ? -1 : 1)*signβ * Go)
+    n = floor(τ/Ghat)
+    Δτ = (θo > π/2 ? -1 : 1) * abs(argmin(abs, [(-1)^n*signβ*(Ghat - Δτtemp) , (-1)^n*signβ*Δτtemp]))
+  else
+    argo = cos(θo) / √(up)
+    k = m
+    tempfac = 1 / √abs(um * a^2)
+    Go = tempfac * FastElliptic.F(asin(argo), k)
+    Ghat_2 = tempfac * FastElliptic.K(k)
+    Ghat = 2Ghat_2
+    Δτtemp = (τ%Ghat + signβ * Go)
+    n = floor(τ/Ghat)
+    Δτ = argmin(abs, [(-1)^n*signβ*(Ghat - Δτtemp) , (-1)^n*signβ*Δτtemp])
+  end
+
+  return Δτ
+end
+
+function θs(metric::Kerr, α, β, θo, τ)
+  return _θs(metric, sign(β), θo, η(metric, α, β, θo, metric.spin), λ(metric, α, θo), τ)
+end
+
+function _θs(metric::Kerr, signβ, θo, η, λ, τ)
+  τ == Inf && return Inf, false
+  a = metric.spin
+  Go, Ghat, Ghat_2, isvortical = 0.0, 0.0, 0.0, η < 0.0
+
+  Δθ = 1 / 2 * (1 - (η + λ^2) / a^2)
+  up = Δθ + √(Δθ^2 + η / a^2)
+  um = Δθ - √(Δθ^2 + η / a^2)
+  m = up / um
+  k = m
+
+  #isvortical = η < 0.
+  ans, k, argo = 0.0, 0.0, 0.0
   tempfac = 1 / √abs(um * a^2)
   if isvortical
     argo = (cos(θo)^2 - um) / (up - um)
     k = 1.0 - m
+    tempfac = 1 / √abs(um * a^2)
     Go = tempfac * FastElliptic.F(asin(√argo), k)
     Ghat_2 = tempfac * FastElliptic.K(k)
+    Ghat = 2Ghat_2
+    Δτtemp = (τ%Ghat + (θo > π/2 ? -1 : 1)*signβ * Go)
+    n = floor(τ/Ghat)
+    absτs = abs(argmin(abs, [(-1)^n*signβ*(Ghat - Δτtemp) , (-1)^n*signβ*Δτtemp]))
+    argr = (FastElliptic.sn(absτs/tempfac, k))^2
+    ans = acos((θo > π/2 ? -1 : 1) * √((up-um)*argr + um))
   else
     argo = cos(θo) / √(up)
     k = m
+    tempfac = 1 / √abs(um * a^2)
     Go = tempfac * FastElliptic.F(asin(argo), k)
     Ghat_2 = tempfac * FastElliptic.K(k)
-  end
-  Ghat = 2Ghat_2
-
-  Δτtemp = (τ%Ghat + signβ * Go)
-  n = floor(τ/Ghat)
-  #Δτ = isindir ? (-1)^n*signβ*(Ghat - Δτtemp) : (-1)^n*signβ*Δτtemp
-  Δτ = argmin(abs, [(-1)^n*signβ*(Ghat - Δτtemp) , (-1)^n*signβ*Δτtemp])
-  ans = 0
-  if isvortical
-    args = abs(FastElliptic.sn(Δτ /tempfac, k)^2)
-    ans = √(args*(up-um) +um)
-  else 
-    ans = √up*FastElliptic.sn(Δτ /tempfac, k)
+    Ghat = 2Ghat_2
+    Δτtemp = (τ%Ghat + signβ * Go)
+    n = floor(τ/Ghat)
+    τs = argmin(abs, [(-1)^n*signβ*(Ghat - Δτtemp) , (-1)^n*signβ*Δτtemp])
+    #println(τs)
+    newargs = FastElliptic.sn(τs/tempfac, k)
+    ans = acos(√up*newargs)
   end
 
-  return acos(ans)
+  return ans
 end
+
+Gϕ(metric::Kerr, α, β, θs, θo, isindir, n) = _Gϕ(metric::Kerr, sign(β), θs, θo, isindir, n, η(metric, α, β, θo, metric.spin), λ(metric, α, θo))
+
+function _Gϕ(metric::Kerr, signβ, θs, θo, isindir, n, η, λ)
+  a = metric.spin
+  Go, Gs, Ghat, minotime, isvortical = 0.0, 0.0, 0.0, 0.0, η < 0.0
+
+  isincone = abs(cos(θs)) < abs(cos(θo))
+  if isincone && (isindir != ((signβ > 0) ⊻ (θo > π / 2)))
+    return Inf, Inf, Inf, isvortical
+  end
+  if ((((signβ < 0) ⊻ (θs > π / 2)) ⊻ (n % 2 == 1)) && !isincone && !isvortical) || (isvortical && ((θo >= π / 2) ⊻ (θs > π / 2)))
+    return Inf, Inf, Inf, isvortical
+  end
+
+  Δθ = 1 / 2 * (1 - (η + λ^2) / a^2)
+  up = Δθ + √(Δθ^2 + η / a^2)
+  um = Δθ - √(Δθ^2 + η / a^2)
+  m = up / um
+  k = m
+
+  #isvortical = η < 0.
+  args = 0
+  argo = 0
+  k = 0
+  if isvortical
+    args = (cos(θs)^2 - um) / (up - um)
+    argo = (cos(θo)^2 - um) / (up - um)
+    k = 1.0 - m
+    if (!(0.0 < argo < 1.0) || !(0.0 < args < 1.0))
+      return Inf, Gs, Ghat, isvortical
+    end
+    tempfac = 1 / ((1-um)*√abs(um * a^2))
+    argn = (up-um)/(1-um)
+    Go = ((θs > π / 2) ? -1 : 1) * tempfac * elliptic_pi(argn, asin(√argo), k)
+    Gs = ((θs > π / 2) ? -1 : 1) * tempfac * elliptic_pi(argn, asin(√args), k)
+    Ghat = 2tempfac * elliptic_pi(argn, k)
+  else
+    args = cos(θs) / √(up)
+    argo = cos(θo) / √(up)
+    k = abs(m)
+    if !(-1 < args < 1) || !(-1 < argo < 1)
+      return Inf, Gs, Ghat, isvortical
+    end
+    tempfac = 1 / √abs(um * a^2)
+    Go = tempfac * elliptic_pi(up, asin(argo), k)
+    Gs = tempfac * elliptic_pi(up, asin(args), k)
+    Ghat = 2tempfac * elliptic_pi(up, k)
+  end
+
+  νθ = isincone ? (n % 2 == 1) ⊻ (θo > θs) : !isindir ⊻ (θs > π / 2)
+  minotime = real(isindir ? (n + 1) * Ghat - signβ * Go + (νθ ? 1 : -1) * Gs : n * Ghat - signβ * Go + (νθ ? 1 : -1) * Gs) #Sign of Go indicates whether the ray is from the forward cone or the rear cone
+  return minotime, Gs, Ghat, isvortical
+end
+
 
 ##----------------------------------------------------------------------------------------------------------------------
 # ϕ Stuff
 ##----------------------------------------------------------------------------------------------------------------------
+function ϕs(metric::Kerr, α, β, θs, θo, rs, isindir, n)
+  a = metric.spin
+  ηtemp = η(metric, α, β, θo, a)
+  λtemp = λ(metric, α, θo)
+
+  roots = get_radial_roots(metric, ηtemp, λtemp)
+  numreals = (abs(imag(roots[1])) > 1e-10 ? 0 : 2) + (abs(imag(roots[3])) > 1e-10 ? 0 : 2)
+
+  root_diffs = get_root_diffs(roots...)
+  Iϕ = 0
+  if numreals == 4 #case2
+    roots = real.(roots)
+    root_diffs = real.(root_diffs)
+    Iϕ = I2ϕ(metric, roots, root_diffs, rs, isindir, λtemp)
+  elseif numreals == 2 #case3
+    if abs(imag(roots[4])) < 1e-10
+      roots = (roots[1], roots[4], roots[2], roots[3])
+    end
+    Iϕ = I3ϕ(metric, roots, root_diffs, rs, isindir, λtemp)
+  else
+    Iϕ = I4ϕ(metric, roots, root_diffs, rs, λtemp)
+  end
+  Iϕ == Inf && return 0.0
+
+  Gϕtemp,_,_,_ = Gϕ(metric, α, β, θs, θo, isindir, n)
+  Gϕtemp == Inf && return 0.0
+  return ϕs(Iϕ, Gϕtemp, λtemp, -π/2)
+end
+
+function ϕs(Iϕ, Gϕ, λ, ϕo)
+  if Iϕ == NaN || Iϕ == Inf
+    return 0.0
+  end
+  if Gϕ == NaN || Gϕ == Inf
+    return 0.0
+  end
+  return Iϕ + λ*Gϕ +ϕo
+  #return λ*Gϕ +ϕo
+end
 
 ##----------------------------------------------------------------------------------------------------------------------
 #Polarization stuff

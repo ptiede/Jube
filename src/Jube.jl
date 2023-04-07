@@ -2,7 +2,9 @@ module Jube
 import FastElliptic
 using DocStringExtensions
 using StaticArrays
-
+using Elliptic
+using ArbNumerics
+using Plots
 # Profile Exports
 #--------------------------------------------------------------------------
 struct FluidVelocity{T}

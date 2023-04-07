@@ -118,43 +118,139 @@ end
 end
 
 @testset "emission coordinates" begin
-    #Test θs inversion
+    ##Test θs inversion
+    #@test begin 
+    #    check = true
+    #    for spin in [-0.95, 0.5, 0.01]
+    #        if check == false
+    #            break
+    #        end
+    #        met = Jube.Kerr(spin)
+    #        all_vals = []
+
+    #        for j in 1:1
+    #            θo = j*π/8
+    #            for i in 1:1:179
+    #                tempθs = i/180*π
+    #                if θo*180/π == i || θo*180/π == (180 - i) || i == 90
+    #                    continue
+    #                end
+    #                for isindir in [true, false]
+    #                    for n in [0, 1, 2]
+    #                        for β in -10.0:0.1:10.0
+    #                            #TODO: Fix behaviour of raytracing for β = 0
+    #                            if isapprox(β, 0.0, atol=1e-6)
+    #                                continue
+    #                            end
+    #                            for α in -10.0:0.1:10.0
+    #                                τ, τs, _, _ = Jube.Gθ(met, α, β, tempθs, θo, isindir, n)
+    #                                temp = Jube.Gs(met, α, β, θo, τ) 
+    #                                if τ == Inf
+    #                                    append!(all_vals,true)
+    #                                else
+    #                                    sol = isapprox(temp, τs, rtol=1e-6)
+    #                                    append!(all_vals, sol)
+    #                                end
+    #                            end
+    #                        end
+    #                    end
+    #                end
+    #            end
+    #        end
+    #        check = all(all_vals)
+    #    end
+    #    check
+    #end
     @test begin 
-        met = Jube.Kerr(0.6)
-        θo = π/4
-        all_vals = []
-        for i in 1:1:179
-            tempθs = i/180*π
-            if θo*180/π == i || θo*180/π == (180 - i) || i == 90
-                continue
+        check = true
+        for spin in [-0.99, 0.5, 0.01]
+            if check == false
+                break
             end
-            for isindir in [true, false]
-                for n in [0, 1, 2]
-                    for β in -5.1:0.1:5.1
-                        #TODO: Fix behaviour of raytracing for β = 0
-                        if β == 0 
-                            continue
-                        end
-                        for α in -5.1:0.1:5.1
-                            τ = Jube.Gθ(met, α, β, tempθs, θo, isindir, n)[1]
-                            temp = Jube.θs(met, α, β, θo, τ) 
-                            if τ == Inf
-                                append!(all_vals,true)
-                            else
-                                sol = isapprox(((temp)), ((tempθs)), atol=1e-3)
-                                if !sol
-                                    println("$(temp*180/π), $(tempθs*180/π)")
+            met = Jube.Kerr(spin)
+            all_vals = []
+
+            for j in 1:1
+                θo = j*π/8
+                for i in 1:1:179
+                    tempθs = i/180*π
+                    if θo*180/π == i || θo*180/π == (180 - i) || i == 90
+                        continue
+                    end
+                    for isindir in [true, false]
+                        for n in [0, 1, 2]
+                            for β in -10.0:0.1:10.0
+                                #TODO: Fix behaviour of raytracing for β = 0
+                                if isapprox(β, 0.0, atol=1e-6)
+                                    continue
                                 end
-                                append!(all_vals, sol)
+                                for α in -10.0:0.1:10.0
+                                    τ, τs, _, _ = Jube.Gθ(met, α, β, tempθs, θo, isindir, n)
+                                    temp = Jube.θs(met, α, β, θo, τ) 
+                                    if τ == Inf
+                                        append!(all_vals,true)
+                                    else
+                                        sol = isapprox(temp, tempθs, rtol=1e-6)
+                                        append!(all_vals, sol)
+                                    end
+                                end
                             end
                         end
                     end
                 end
             end
+            check = all(all_vals)
         end
-        all(all_vals)
+        check
     end
+    #@test begin 
+    #    check = true
+    #    for spin in [-0.95, 0.5, 0.01]
+    #        if check == false
+    #            break
+    #        end
+    #        met = Jube.Kerr(spin)
+    #        all_vals = []
 
+    #        for j in 1:1
+    #            θo = j*π/8
+    #            o = Jube.AssymptoticObserver(1, θo)
+    #            for i in 1:1:179
+    #                tempθs = i/180*π
+    #                if θo*180/π == i || θo*180/π == (180 - i) || i == 90
+    #                    continue
+    #                end
+    #                for isindir in [true, false]
+    #                    for n in [0, 1, 2]
+    #                        for β in -10.0:0.1:10.0
+    #                            #TODO: Fix behaviour of raytracing for β = 0
+    #                            if isapprox(β, 0.0, atol=1e-6)
+    #                                continue
+    #                            end
+    #                            for α in -10.0:0.1:10.0
+    #                                ηtemp = Jube.η(met, α, β, θo, met.spin)
+    #                                λtemp = Jube.λ(met, α, θo)
+
+    #                                τ, τs, _, _ = Jube.Gθ(met, α, β, tempθs, θo, isindir, n)
+    #                                rs, νr, numroots = Jube._rs(met, ηtemp, λtemp, τ)
+    #                                
+    #                                if τ == Inf || rs < horizon(met)
+    #                                    append!(all_vals,true)
+    #                                else
+    #                                    τr = Jube.Ir(met, νr, θo ,rs, α, β)
+    #                                    sol = isapprox(τr, τ, rtol=1e-6)
+    #                                    append!(all_vals, sol)
+    #                                end
+    #                            end
+    #                        end
+    #                    end
+    #                end
+    #            end
+    #        end
+    #        check = all(all_vals)
+    #    end
+    #    check
+    #end
 
 end
         
@@ -213,6 +309,3 @@ end
 #
 #    end
 #end
-#
-#   
-#
