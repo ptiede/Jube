@@ -1,16 +1,9 @@
 struct JuKeBOX <: AbstractEmissionModel
     nmax::Int
-    metric::Union{Kerr, Schwarzschild}
+    metric::Kerr
     profile::DoublePower
     function JuKeBOX(nmax, spin, α, αζ, rpeak, p1, p2, βv, χ, ι, η)
         met = Kerr(spin)
-        fluid_vel = FluidVelocity(βv, χ)
-        mag_field = MagneticField(ι, η)
-        prof = DoublePower(fluid_vel, mag_field, α, αζ, rpeak, p1, p2)
-        return new(nmax, met, prof)
-    end
-    function JuKeBOX(nmax, α, αζ, rpeak, p1, p2, βv, χ, ι, η)
-        met = Schwarzschild()
         fluid_vel = FluidVelocity(βv, χ)
         mag_field = MagneticField(ι, η)
         prof = DoublePower(fluid_vel, mag_field, α, αζ, rpeak, p1, p2)

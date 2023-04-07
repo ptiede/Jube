@@ -2,7 +2,9 @@ module Jube
 import FastElliptic
 using DocStringExtensions
 using StaticArrays
-
+import Elliptic
+using ArbNumerics
+using Plots
 # Profile Exports
 #--------------------------------------------------------------------------
 struct FluidVelocity{T}
@@ -44,31 +46,33 @@ include("profiles/GaussianRing.jl")
 
 # Metric Exports
 #--------------------------------------------------------------------------
-# Space Time Event Declaration
-abstract type AbstractSpaceTimeEvent end
-function getCoordinates(event::AbstractSpaceTimeEvent) 
-    @error "getCoordinates has not been defined for $(typeof(event))"
-end
+export metric_uu, metric_dd, horizon, Kerr, get_roots, rs, θs, calcPol, η, λ
 
+# Space Time Event Declaration
+export AssympototicObserver, get_coordinates
+
+abstract type AbstractSpaceTimeEvent end
+function get_coordinates(event::AbstractSpaceTimeEvent) 
+    throw("get_coordinates has not been defined for even of type: $(typeof(event))")
+end
 struct AssymptoticObserver{P,O} <: AbstractSpaceTimeEvent
     azimuth::P
     inclination::O
 end
-function getCoordinates(observer::AssymptoticObserver)
-    return (distance=observer.distance, observer=observer.inclination)
+function get_coordinates(observer::AssymptoticObserver)
+    return (azimuth=observer.azimuth, inclination=observer.inclination)
 end
 
 abstract type AbstractMetric end
-function met_dd(met::AbstractMetric, args...) @error("The metric has not been defined for $(typeof(met))")end
-function met_uu(met::AbstractMetric, args...) inv(met_dd(met::AbstractMetric, args...)) end
-#TODO: Define a default inversion scheme
-
-export Kerr
+#function metric_dd(met::AbstractMetric) @error("The metric has not been defined for $(typeof(met))")end
+function metric_dd(metric::AbstractMetric, args...) ::AbstractMatrix
+    throw(MethodError(metric_dd, (metric, args...)))
+    return [1 0; 0 1]
+end
+function metric_uu(metric::AbstractMetric, args...) ::AbstractMatrix
+    try return inv(metric_dd(metric::AbstractMetric, args...)) catch err throw(err) end 
+end
 include("metrics/Kerr.jl")
-export Schwarzschild
-include("metrics/Schwarzschild.jl")
-export Minkowski
-include("metrics/Minkowski.jl")
 
 # Emission Exports
 #--------------------------------------------------------------------------
