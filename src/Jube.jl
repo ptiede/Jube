@@ -4,7 +4,6 @@ using DocStringExtensions
 using StaticArrays
 import Elliptic
 using ArbNumerics
-using Plots
 # Profile Exports
 #--------------------------------------------------------------------------
 struct FluidVelocity{T}
