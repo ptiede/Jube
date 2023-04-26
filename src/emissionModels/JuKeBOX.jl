@@ -39,7 +39,7 @@ end
 function trace_nring(acc::JuKeBOX, n::Int, α, β, θs, o::AssymptoticObserver, isindir)
     met = acc.metric
     rh = horizon(met)
-    r, νr, _ = rs(met, α, β, θs, o, isindir, n) 
+    r = rs(met, α, β, θs, o, isindir, n)
     T = eltype(r)
 
     νθ =  cos(θs)< abs(cos(o.inclination)) ? (o.inclination>θs) ⊻ (n%2==1) : !isindir
@@ -47,13 +47,13 @@ function trace_nring(acc::JuKeBOX, n::Int, α, β, θs, o::AssymptoticObserver, 
     # bail out if r is within horizon
     (r == Inf || r < rh + eps()) && return zero(T), zero(T), zero(T), zero(T)
 
-    return _emission(acc, α, β, r, νr, νθ, o, θs)
+    return _emission(acc, α, β, r, true, νθ, o, θs)
 end
 
 function trace_nring_and_get_mask(acc::JuKeBOX, n, α, β, θs, o::AssymptoticObserver, isindir)
     met = acc.metric
     rh = horizon(met)
-    (r, νr, _), mask = rs_mask(met, n, α, β, θs, o, isindir) 
+    (r, νr, _), mask = rs_mask(met, n, α, β, θs, o, isindir)
     T = eltype(r)
 
     νθ =  cos(θs)< abs(cos(o.inclination)) ? (o.inclination>θs) ⊻ (n%2==1) : !isindir
