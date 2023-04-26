@@ -240,8 +240,8 @@ function rs(metric::Kerr, α, β, θs, o::AssymptoticObserver, isindir, n)
   if τ != Inf
     return _rs(metric, ηtemp, λtemp, τ)[1]
   else
-    return 0.0
-    #return (0.0, true, 4)
+    #return 0.0
+    return (0.0, true, 4)
   end
 end
 
