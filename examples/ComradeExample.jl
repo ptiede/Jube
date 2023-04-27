@@ -1,7 +1,7 @@
 import Pkg;
 Pkg.activate((@__DIR__))
-Pkg.add(url="https://github.com/dchang10/FastElliptic.git")
-Pkg.add(url=abspath((@__DIR__)*"/../"))
+# Pkg.add(url="https://github.com/dchang10/FastElliptic.git")
+# Pkg.add(url=abspath((@__DIR__)*"/../"))
 using Comrade
 using Plots
 using Jube
@@ -28,7 +28,7 @@ function ComradeBase.intensity_point(s::JKConeModel, p)
     indirect = Jube.raytrace(s.acc, -α, β, s.s, s.o, false)[1]
 
     return direct + indirect
-    
+
 end
 
 struct SModel{C}

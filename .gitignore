@@ -2,6 +2,7 @@
 contourTest.jl
 comrade_test.jl
 Manifest.toml
-.vscode*
+.vscode
 .CondaPkg
 *.png
+.vscode/*

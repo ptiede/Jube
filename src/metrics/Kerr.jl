@@ -41,8 +41,8 @@ Inverse Kerr metric in Boyer Lindquist (BL) coordinates.
     `metric` : Kerr metric
 
     `r` : Radius
-    
-    `θ` : Inclination 
+
+    `θ` : Inclination
 """
 function metric_uu(metric::Kerr, r, θ)
   a = metric.spin
@@ -67,8 +67,8 @@ Inverse Kerr metric in Boyer Lindquist (BL) coordinates.
     `metric` : Kerr metric
 
     `r` : Radius
-    
-    `θ` : Inclination 
+
+    `θ` : Inclination
 """
 function metric_dd(metric::Kerr, r, θ)
   a = metric.spin
@@ -107,11 +107,11 @@ Defines a boundary on the Assyptotic observers screen where emission that origin
     `r`   : Boyer Lindquist radius
 
 """
-function βboundary(metric::Kerr, α, o::AssymptoticObserver, θs) 
+function βboundary(metric::Kerr, α, o::AssymptoticObserver, θs)
   θo = o.inclination
   a = metric.spin
   cosθs2 = cos(θs)^2
-  √max((cos(θo)^2 - cosθs2) * (α^2 - a^2*(1 - cosθs2)) / (cosθs2 - 1), 0.0) #eq 15 DOI 10.3847/1538-4357/acafe3 
+  √max((cos(θo)^2 - cosθs2) * (α^2 - a^2*(1 - cosθs2)) / (cosθs2 - 1), 0.0) #eq 15 DOI 10.3847/1538-4357/acafe3
 end
 
 """
@@ -230,15 +230,15 @@ function rs(metric::Kerr, α, β, θs, o::AssymptoticObserver, isindir, n)
     αmin = αboundary(metric, θs)
     βbound = (abs(α) >= αmin + eps() ? βboundary(metric, α, o, θs) : 0.0)
     if abs(β) + eps() < βbound
-      #return 0.0, true, 4
-      return 0.0
+      return 0.0, true, 4
+      #return 0.0
     end
   end
   ηtemp = η(metric, α, β, θo, a)
   λtemp = λ(metric, α, θo)
   τ, _, _ = _Gθ(metric, sign(β), θs, θo, isindir, n, ηtemp, λtemp)
   if τ != Inf
-    return _rs(metric, ηtemp, λtemp, τ)[1]
+    return _rs(metric, ηtemp, λtemp, τ)
   else
     #return 0.0
     return (0.0, true, 4)
@@ -685,7 +685,7 @@ function I4ϕ(metric::Kerr, roots::NTuple{4}, root_diffs::NTuple{5}, rs, λ)
   Im = Im_full - Im_s
 
   return real(2a/(rp-rm)*((rp-a*λ/2)*Ip - (rm-a*λ/2)*Im))
- 
+
 end
 
 ##----------------------------------------------------------------------------------------------------------------------
@@ -698,7 +698,7 @@ Mino time of trajectory between two inclinations for a given screen coordinate
 
   `α` : Bardeen α
 
-  `β` : Bardeen β 
+  `β` : Bardeen β
 
   `a` : Blackhole angular Momentum
 
@@ -972,9 +972,9 @@ end
 Jacobian which converts Boyer-Lindquist (BL) covector on the right to a ZAMO covector
 
     `r` : Radius
-    
-    `θ` : Inclination 
-    
+
+    `θ` : Inclination
+
     `a` : Blackhole spin
 """
 function jac_bl2zamo_du(metric::Kerr, r, θ)
@@ -998,9 +998,9 @@ end
 Jacobian which converts ZAMO covector on the right to a Boyer-Lindquist (BL) covector
 
     `r` : Radius
-    
-    `θ` : Inclination 
-    
+
+    `θ` : Inclination
+
     `a` : Blackhole spin
 """
 function jac_zamo2bl_du(metric::Kerr, r, θ)
